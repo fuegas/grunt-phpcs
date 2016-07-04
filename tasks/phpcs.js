@@ -38,16 +38,25 @@ module.exports = function(grunt) {
     grunt.registerMultiTask('phpcs', 'Run PHP Code Sniffer', function() {
         var done = null,
             parameters = null,
+            runtimes = [],
             target = this.target,
             options = this.options(defaults),
+            runtimes_raw = options['runtime'],
             execute = path.normalize(options.bin),
             files = [].concat.apply([], this.files.map(function(mapping) { return mapping.src; })).sort();
         
         // removes duplicate files
-        files = files.filter(function(file, position) { 
+        files = files.filter(function(file, position) {
             return !position || file !== files[position - 1];
         });
         
+        // retrieve runtime variables from options
+        if (runtimes_raw) {
+            runtimes = Object.keys(runtimes_raw).map(function(config) {
+                return '--runtime-set ' + config + ' ' + runtimes_raw[config];
+            });
+        }
+
         // generates parameters
         parameters = Object.keys(options).map(function(option) {
             return option in command.flags && options[option] === true ? 
@@ -55,7 +64,7 @@ module.exports = function(grunt) {
                     '--' + command.options[option] + '=' + options[option] : null;
         }).filter(Boolean);
         
-        execute += ' ' + parameters.join(' ') + ' "' + files.join('" "') + '"';
+        execute += ' ' + parameters.join(' ') + ' ' + runtimes.join(' ') + ' "' + files.join('" "') + '"';
         
         grunt.verbose.writeln('Executing: ' + execute);
         
